@@ -1,6 +1,6 @@
 const CACHE_NAME = 'wwtp-ops-v1';
 const urlsToCache = [
-  '/wastewater-pwa.html',
+  '/index.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
