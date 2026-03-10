@@ -2,7 +2,7 @@
   "name": "WWTP Operations",
   "short_name": "WWTP Ops",
   "description": "Wastewater Treatment Plant Operations App",
-  "start_url": "/wastewater-pwa.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0a4a6e",
