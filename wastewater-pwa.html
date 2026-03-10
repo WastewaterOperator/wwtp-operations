@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a4a6e">
+    <meta name="description" content="Wastewater Treatment Plant Operations App">
+    <title>WWTP Operations</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0a4a6e;
+            --primary-light: #0d5f8c;
+            --primary-dark: #073547;
+            --secondary: #2b8fbd;
+            --accent: #00d4ff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateX(-2px);
+        }
+
+        .back-btn.hidden {
+            display: none;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Page transitions */
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Grid layouts */
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--secondary), var(--accent));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--secondary);
+        }
+
+        .card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        /* Checklist */
+        .checklist {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .checklist-header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .checklist-title {
+            font-size: 1.5rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .checklist-progress {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--secondary));
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-weight: 600;
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .checklist-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            background: var(--bg);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .checklist-item:hover {
+            background: #f1f5f9;
+            border-color: var(--secondary);
+        }
+
+        .checklist-item.completed {
+            background: #f0fdf4;
+            border-color: var(--success);
+        }
+
+        .checkbox-wrapper {
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .checkbox {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid var(--border);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface);
+        }
+
+        .checkbox:hover {
+            border-color: var(--secondary);
+            transform: scale(1.1);
+        }
+
+        .checklist-item.completed .checkbox {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .checkmark {
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: none;
+        }
+
+        .checklist-item.completed .checkmark {
+            display: block;
+            animation: checkPop 0.3s ease;
+        }
+
+        @keyframes checkPop {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .checklist-content {
+            flex: 1;
+        }
+
+        .checklist-number {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .checklist-text {
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .checklist-item.completed .checklist-text {
+            color: var(--text-light);
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Bottom nav for mobile */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 0.75rem;
+            display: none;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .bottom-nav.show {
+            display: block;
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .nav-item {
+            text-align: center;
+            color: var(--text-light);
+            text-decoration: none;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            flex: 1;
+            max-width: 100px;
+        }
+
+        .nav-item:hover {
+            background: var(--bg);
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-label {
+            font-size: 0.75rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Install prompt */
+        .install-prompt {
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .install-prompt.show {
+            display: flex;
+        }
+
+        .install-prompt-content {
+            flex: 1;
+        }
+
+        .install-prompt-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .install-prompt-text {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .install-btn {
+            background: white;
+            color: var(--primary);
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <button class="back-btn hidden" id="backBtn" onclick="goBack()">←</button>
+            <h1 id="pageTitle">WWTP Operations</h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="install-prompt" id="installPrompt">
+            <div class="install-prompt-content">
+                <div class="install-prompt-title">Install App</div>
+                <div class="install-prompt-text">Add to home screen for quick access</div>
+            </div>
+            <button class="install-btn" id="installBtn">Install</button>
+        </div>
+
+        <!-- HOME PAGE -->
+        <div id="home" class="page active">
+            <div class="grid">
+                <div class="card" onclick="navigate('sops')">
+                    <span class="card-icon">📋</span>
+                    <div class="card-title">SOPs</div>
+                    <div class="card-description">Standard Operating Procedures</div>
+                </div>
+                <div class="card" onclick="navigate('training')">
+                    <span class="card-icon">🎓</span>
+                    <div class="card-title">Training</div>
+                    <div class="card-description">Training materials and resources</div>
+                </div>
+                <div class="card" onclick="navigate('vactor')">
+                    <span class="card-icon">🚛</span>
+                    <div class="card-title">Vactor</div>
+                    <div class="card-description">Vactor operations</div>
+                </div>
+                <div class="card" onclick="navigate('settings')">
+                    <span class="card-icon">⚙️</span>
+                    <div class="card-title">Settings</div>
+                    <div class="card-description">App configuration</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOPS PAGE -->
+        <div id="sops" class="page">
+            <div class="grid">
+                <div class="card" onclick="navigate('sops-primary')">
+                    <span class="card-icon">🌊</span>
+                    <div class="card-title">Primary</div>
+                    <div class="card-description">Primary treatment procedures</div>
+                </div>
+                <div class="card" onclick="navigate('sops-secondary')">
+                    <span class="card-icon">⚙️</span>
+                    <div class="card-title">Secondary</div>
+                    <div class="card-description">Secondary treatment procedures</div>
+                </div>
+                <div class="card" onclick="navigate('sops-solids')">
+                    <span class="card-icon">🏗️</span>
+                    <div class="card-title">Solids</div>
+                    <div class="card-description">Solids handling procedures</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOPS PRIMARY PAGE -->
+        <div id="sops-primary" class="page">
+            <div class="empty-state">
+                <div class="empty-state-icon">🌊</div>
+                <h2>Primary Treatment</h2>
+                <p>Primary treatment procedures will be added here.</p>
+            </div>
+        </div>
+
+        <!-- SOPS SECONDARY PAGE -->
+        <div id="sops-secondary" class="page">
+            <div class="grid">
+                <div class="card" onclick="navigate('secondary-compressors')">
+                    <span class="card-icon">🔧</span>
+                    <div class="card-title">Compressors</div>
+                    <div class="card-description">Compressor operations</div>
+                </div>
+                <div class="card" onclick="navigate('secondary-cooling')">
+                    <span class="card-icon">❄️</span>
+                    <div class="card-title">Cooling Towers</div>
+                    <div class="card-description">Cooling tower operations</div>
+                </div>
+                <div class="card" onclick="navigate('secondary-o2')">
+                    <span class="card-icon">💨</span>
+                    <div class="card-title">O2 Plant</div>
+                    <div class="card-description">Oxygen plant operations</div>
+                </div>
+                <div class="card" onclick="navigate('secondary-bottleup')">
+                    <span class="card-icon">🔒</span>
+                    <div class="card-title">Bottle-Up</div>
+                    <div class="card-description">Bottle-up procedures</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOPS SOLIDS PAGE -->
+        <div id="sops-solids" class="page">
+            <div class="empty-state">
+                <div class="empty-state-icon">🏗️</div>
+                <h2>Solids Handling</h2>
+                <p>Solids handling procedures will be added here.</p>
+            </div>
+        </div>
+
+        <!-- TRAINING PAGE -->
+        <div id="training" class="page">
+            <div class="empty-state">
+                <div class="empty-state-icon">🎓</div>
+                <h2>Training Materials</h2>
+                <p>Training resources will be added here.</p>
+            </div>
+        </div>
+
+        <!-- VACTOR PAGE -->
+        <div id="vactor" class="page">
+            <div class="grid">
+                <div class="card" onclick="navigate('vactor-pretrip')">
+                    <span class="card-icon">✓</span>
+                    <div class="card-title">Pre-Trip Inspection</div>
+                    <div class="card-description">Daily pre-trip inspection checklist</div>
+                </div>
+                <div class="card" onclick="navigate('vactor-job-tracking')">
+                    <span class="card-icon">📊</span>
+                    <div class="card-title">Job Tracking</div>
+                    <div class="card-description">Track job details and operations</div>
+                </div>
+                <div class="card" onclick="navigate('vactor-maintenance')">
+                    <span class="card-icon">🔧</span>
+                    <div class="card-title">Maintenance</div>
+                    <div class="card-description">Maintenance schedules and logs</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VACTOR PRE-TRIP INSPECTION PAGE -->
+        <div id="vactor-pretrip" class="page">
+            <div class="checklist">
+                <div class="checklist-header">
+                    <div class="checklist-title">Vactor Pre-Trip Inspection</div>
+                    <div class="checklist-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="pretripProgressFill"></div>
+                        </div>
+                        <div class="progress-text" id="pretripProgressText">0%</div>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--primary); margin-bottom: 1rem;">Safety & Documentation:</h3>
+                
+                <div class="checklist-item" data-step="1" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 1</div>
+                        <div class="checklist-text">Verify driver's license is valid and in possession</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="2" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 2</div>
+                        <div class="checklist-text">Check fire extinguisher is charged and accessible</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="3" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 3</div>
+                        <div class="checklist-text">Verify first aid kit is present and stocked</div>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--primary); margin: 1.5rem 0 1rem 0;">Fluid Levels:</h3>
+
+                <div class="checklist-item" data-step="4" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 4</div>
+                        <div class="checklist-text">Check engine oil level</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="5" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 5</div>
+                        <div class="checklist-text">Check coolant level</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="6" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 6</div>
+                        <div class="checklist-text">Check hydraulic fluid level</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="7" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 7</div>
+                        <div class="checklist-text">Verify fuel level is adequate for job</div>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--primary); margin: 1.5rem 0 1rem 0;">Tires & Wheels:</h3>
+
+                <div class="checklist-item" data-step="8" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 8</div>
+                        <div class="checklist-text">Inspect tire pressure and condition on all tires</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="9" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 9</div>
+                        <div class="checklist-text">Check lug nuts are tight</div>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--primary); margin: 1.5rem 0 1rem 0;">Lights & Signals:</h3>
+
+                <div class="checklist-item" data-step="10" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 10</div>
+                        <div class="checklist-text">Test all headlights and taillights</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="11" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 11</div>
+                        <div class="checklist-text">Test turn signals and hazard lights</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="12" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 12</div>
+                        <div class="checklist-text">Test amber warning lights/strobes</div>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--primary); margin: 1.5rem 0 1rem 0;">Vacuum System:</h3>
+
+                <div class="checklist-item" data-step="13" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 13</div>
+                        <div class="checklist-text">Inspect vacuum hoses for damage or wear</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="14" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 14</div>
+                        <div class="checklist-text">Check boom operation and hydraulics</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="15" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 15</div>
+                        <div class="checklist-text">Verify debris body door seals properly</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="16" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 16</div>
+                        <div class="checklist-text">Test vacuum system operation (no load)</div>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--primary); margin: 1.5rem 0 1rem 0;">Water System:</h3>
+
+                <div class="checklist-item" data-step="17" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 17</div>
+                        <div class="checklist-text">Check water tank level</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="18" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 18</div>
+                        <div class="checklist-text">Inspect pressure washer hoses and fittings</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item" data-step="19" data-checklist="pretrip">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheckPretrip(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 19</div>
+                        <div class="checklist-text">Test high-pressure pump operation</div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="resetChecklistPretrip()">Reset Checklist</button>
+                    <button class="btn btn-primary" onclick="completePretrip()">Complete & Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VACTOR MAINTENANCE PAGE -->
+        <div id="vactor-maintenance" class="page">
+            <div class="empty-state">
+                <div class="empty-state-icon">🔧</div>
+                <h2>Maintenance Schedules</h2>
+                <p>Maintenance schedules and procedures will be added here.</p>
+            </div>
+        </div>
+
+        <!-- VACTOR JOB TRACKING PAGE -->
+        <div id="vactor-job-tracking" class="page">
+            <div class="checklist">
+                <div class="checklist-header">
+                    <div class="checklist-title">Job Tracking</div>
+                </div>
+
+                <div id="jobListView">
+                    <div style="margin-bottom: 1.5rem;">
+                        <button class="btn btn-primary" onclick="showNewJobForm()" style="width: 100%;">
+                            + Start New Job
+                        </button>
+                    </div>
+
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">Recent Jobs</h3>
+                    <div id="jobsList"></div>
+                </div>
+
+                <div id="newJobForm" style="display: none;">
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">New Job Details</h3>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Operator Name:</label>
+                        <input type="text" id="operatorName" placeholder="Enter your name" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Team Members:</label>
+                        <input type="text" id="teamMembers" placeholder="Enter team member names" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Job Site Location:</label>
+                        <input type="text" id="jobLocation" placeholder="Enter job site address or description" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" onclick="cancelNewJob()">Cancel</button>
+                        <button class="btn btn-primary" onclick="startJob()">Start Job</button>
+                    </div>
+                </div>
+
+                <div id="activeJobView" style="display: none;">
+                    <div style="background: #f0fdf4; border: 2px solid var(--success); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                        <div style="font-weight: 600; color: var(--success); margin-bottom: 0.5rem;">Active Job</div>
+                        <div id="activeJobInfo"></div>
+                    </div>
+
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">Operations Log</h3>
+                    
+                    <div class="grid" style="margin-bottom: 1.5rem;">
+                        <div class="card" onclick="logOperation('DECANT')" style="text-align: center; cursor: pointer;">
+                            <span class="card-icon" style="font-size: 3rem;">💧</span>
+                            <div class="card-title">DECANT</div>
+                            <div class="card-description" id="decantCount">0 times</div>
+                        </div>
+                        <div class="card" onclick="logOperation('DUMP')" style="text-align: center; cursor: pointer;">
+                            <span class="card-icon" style="font-size: 3rem;">🗑️</span>
+                            <div class="card-title">DUMP</div>
+                            <div class="card-description" id="dumpCount">0 times</div>
+                        </div>
+                        <div class="card" onclick="logOperation('FILL')" style="text-align: center; cursor: pointer;">
+                            <span class="card-icon" style="font-size: 3rem;">💦</span>
+                            <div class="card-title">FILL</div>
+                            <div class="card-description" id="fillCount">0 times</div>
+                        </div>
+                    </div>
+
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">Operation History</h3>
+                    <div id="operationLog" style="max-height: 300px; overflow-y: auto;"></div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" onclick="viewJobSummary()">View Summary</button>
+                        <button class="btn btn-primary" onclick="completeJob()">Complete Job</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECONDARY COOLING TOWERS PAGE -->
+        <div id="secondary-cooling" class="page">
+            <div class="empty-state">
+                <div class="empty-state-icon">❄️</div>
+                <h2>Cooling Towers</h2>
+                <p>Cooling tower procedures will be added here.</p>
+            </div>
+        </div>
+
+        <!-- SECONDARY O2 PLANT PAGE -->
+        <div id="secondary-o2" class="page">
+            <div class="empty-state">
+                <div class="empty-state-icon">💨</div>
+                <h2>O2 Plant</h2>
+                <p>Oxygen plant procedures will be added here.</p>
+            </div>
+        </div>
+
+        <!-- SECONDARY BOTTLE-UP PAGE -->
+        <div id="secondary-bottleup" class="page">
+            <div class="empty-state">
+                <div class="empty-state-icon">🔒</div>
+                <h2>Bottle-Up</h2>
+                <p>Bottle-up procedures will be added here.</p>
+            </div>
+        </div>
+
+        <!-- COMPRESSORS PAGE -->
+        <div id="secondary-compressors" class="page">
+            <div class="grid">
+                <div class="card" onclick="navigate('compressor-startup')">
+                    <span class="card-icon">▶️</span>
+                    <div class="card-title">Compressor Start-Up</div>
+                    <div class="card-description">Start-up procedures</div>
+                </div>
+                <div class="card" onclick="navigate('compressor-shutdown')">
+                    <span class="card-icon">⏹️</span>
+                    <div class="card-title">Compressor Shut-down</div>
+                    <div class="card-description">Shut-down procedures</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPRESSOR START-UP PAGE -->
+        <div id="compressor-startup" class="page">
+            <div class="checklist">
+                <div class="checklist-header">
+                    <div class="checklist-title">Compressor Start-Up</div>
+                    <div class="checklist-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">0%</div>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--primary); margin-bottom: 1rem;">Pre-Start Up Inspection:</h3>
+                
+                <div class="checklist-item" data-step="1">
+                    <div class="checkbox-wrapper">
+                        <div class="checkbox" onclick="toggleCheck(this)">
+                            <span class="checkmark">✓</span>
+                        </div>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-number">Step 1</div>
+                        <div class="checklist-text">Check for error messages and at least 4160 volts for each phase on the Multi-Lyn panel.</div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="resetChecklist()">Reset Checklist</button>
+                    <button class="btn btn-primary" onclick="alert('Checklist completed! Data can be saved to local storage or server.')">Complete & Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPRESSOR SHUT-DOWN PAGE -->
+        <div id="compressor-shutdown" class="page">
+            <div class="empty-state">
+                <div class="empty-state-icon">⏹️</div>
+                <h2>Compressor Shut-down</h2>
+                <p>Shut-down procedures will be added here.</p>
+            </div>
+        </div>
+
+        <!-- SETTINGS PAGE -->
+        <div id="settings" class="page">
+            <div class="checklist">
+                <div class="checklist-header">
+                    <div class="checklist-title">Settings</div>
+                </div>
+
+                <h3 style="color: var(--primary); margin-bottom: 1rem;">Google Sheets Integration</h3>
+                
+                <div style="background: #f0f9ff; border: 2px solid var(--secondary); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <div style="font-weight: 600; color: var(--primary); margin-bottom: 0.5rem;">📊 Sync Job Data to Google Sheets</div>
+                    <div style="font-size: 0.9rem; color: var(--text);">
+                        When configured, completed Vactor jobs will automatically sync to a Google Sheet where supervisors and engineers can view all job data in real-time.
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">
+                        Google Sheets Webhook URL:
+                    </label>
+                    <input 
+                        type="text" 
+                        id="webhookUrl" 
+                        placeholder="Paste webhook URL here (optional)" 
+                        style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: monospace;"
+                    >
+                    <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem;">
+                        See setup instructions below. Leave blank to save data locally only.
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="testWebhook()">Test Connection</button>
+                    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                </div>
+
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid var(--border);">
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">Status</h3>
+                    <div id="settingsStatus" style="padding: 1rem; background: var(--bg); border-radius: 8px;">
+                        <div style="font-size: 0.9rem; color: var(--text-light);">
+                            No webhook configured - data saves to device only
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid var(--border);">
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">Setup Instructions</h3>
+                    <button class="btn btn-secondary" onclick="navigate('setup-guide')" style="width: 100%;">
+                        📖 View Google Sheets Setup Guide
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETUP GUIDE PAGE -->
+        <div id="setup-guide" class="page">
+            <div class="checklist">
+                <div class="checklist-header">
+                    <div class="checklist-title">Google Sheets Setup Guide</div>
+                </div>
+
+                <div style="line-height: 1.8;">
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">Step 1: Create Google Sheet</h3>
+                    <ol style="margin-left: 1.5rem; margin-bottom: 2rem;">
+                        <li>Go to <a href="https://sheets.google.com" target="_blank" style="color: var(--secondary);">sheets.google.com</a></li>
+                        <li>Create a new blank spreadsheet</li>
+                        <li>Name it "WWTP Vactor Jobs" or similar</li>
+                    </ol>
+
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">Step 2: Set Up Apps Script</h3>
+                    <ol style="margin-left: 1.5rem; margin-bottom: 2rem;">
+                        <li>In your Google Sheet, click <strong>Extensions → Apps Script</strong></li>
+                        <li>Delete any existing code</li>
+                        <li>Copy and paste the script code (see below)</li>
+                        <li>Click <strong>Save</strong> (disk icon)</li>
+                        <li>Click <strong>Deploy → New deployment</strong></li>
+                        <li>Click gear icon ⚙️, select <strong>Web app</strong></li>
+                        <li>Set "Execute as" to <strong>Me</strong></li>
+                        <li>Set "Who has access" to <strong>Anyone</strong></li>
+                        <li>Click <strong>Deploy</strong></li>
+                        <li>Copy the <strong>Web app URL</strong> (this is your webhook URL)</li>
+                    </ol>
+
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">Step 3: Configure App</h3>
+                    <ol style="margin-left: 1.5rem; margin-bottom: 2rem;">
+                        <li>Go back to Settings in this app</li>
+                        <li>Paste the webhook URL into the field</li>
+                        <li>Click <strong>Test Connection</strong> to verify</li>
+                        <li>Click <strong>Save Settings</strong></li>
+                    </ol>
+
+                    <div style="background: #fff7ed; border: 2px solid var(--warning); border-radius: 8px; padding: 1rem; margin: 2rem 0;">
+                        <div style="font-weight: 600; color: var(--warning); margin-bottom: 0.5rem;">⚠️ Important Notes</div>
+                        <ul style="margin-left: 1.5rem; font-size: 0.9rem;">
+                            <li>Anyone with the webhook URL can send data to your sheet</li>
+                            <li>Don't share the URL publicly</li>
+                            <li>You can regenerate a new deployment if needed</li>
+                        </ul>
+                    </div>
+
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">Apps Script Code</h3>
+                    <div style="background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem; overflow-x: auto; margin-bottom: 2rem;">
+<pre style="margin: 0; white-space: pre-wrap;">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  // Create headers if this is the first row
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow([
+      'Timestamp',
+      'Date', 
+      'Time',
+      'Operator',
+      'Team',
+      'Location',
+      'Duration (min)',
+      'Decants',
+      'Dumps',
+      'Fills',
+      'Total Operations',
+      'Job ID'
+    ]);
+  }
+  
+  // Parse the incoming data
+  var data = JSON.parse(e.postData.contents);
+  
+  // Append new row
+  sheet.appendRow([
+    data.timestamp,
+    data.date,
+    data.time,
+    data.operator,
+    data.team,
+    data.location,
+    data.durationMinutes,
+    data.decantCount,
+    data.dumpCount,
+    data.fillCount,
+    data.totalOperations,
+    data.jobId
+  ]);
+  
+  return ContentService.createTextOutput('Success');
+}</pre>
+                    </div>
+
+                    <div style="background: #f0fdf4; border: 2px solid var(--success); border-radius: 8px; padding: 1rem;">
+                        <div style="font-weight: 600; color: var(--success); margin-bottom: 0.5rem;">✓ After Setup</div>
+                        <div style="font-size: 0.9rem; color: var(--text);">
+                            Every time an operator completes a job, the data will automatically appear as a new row in your Google Sheet. Supervisors and engineers can access the sheet from any device with their Google account.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navigation stack
+        let navigationStack = ['home'];
+        const pageTitles = {
+            'home': 'WWTP Operations',
+            'sops': 'SOPs',
+            'sops-primary': 'Primary Treatment',
+            'sops-secondary': 'Secondary Treatment',
+            'sops-solids': 'Solids Handling',
+            'secondary-compressors': 'Compressors',
+            'secondary-cooling': 'Cooling Towers',
+            'secondary-o2': 'O2 Plant',
+            'secondary-bottleup': 'Bottle-Up',
+            'compressor-startup': 'Compressor Start-Up',
+            'compressor-shutdown': 'Compressor Shut-down',
+            'training': 'Training',
+            'vactor': 'Vactor',
+            'vactor-pretrip': 'Pre-Trip Inspection',
+            'vactor-job-tracking': 'Job Tracking',
+            'vactor-maintenance': 'Maintenance',
+            'settings': 'Settings',
+            'setup-guide': 'Setup Guide'
+        };
+
+        // Navigate to page
+        function navigate(pageId) {
+            // Hide current page
+            const currentPage = navigationStack[navigationStack.length - 1];
+            document.getElementById(currentPage).classList.remove('active');
+            
+            // Show new page
+            document.getElementById(pageId).classList.add('active');
+            
+            // Update stack
+            navigationStack.push(pageId);
+            
+            // Update UI
+            updateNavigation();
+        }
+
+        // Go back
+        function goBack() {
+            if (navigationStack.length > 1) {
+                // Remove current page
+                const currentPage = navigationStack.pop();
+                document.getElementById(currentPage).classList.remove('active');
+                
+                // Show previous page
+                const previousPage = navigationStack[navigationStack.length - 1];
+                document.getElementById(previousPage).classList.add('active');
+                
+                // Update UI
+                updateNavigation();
+            }
+        }
+
+        // Update navigation UI
+        function updateNavigation() {
+            const currentPage = navigationStack[navigationStack.length - 1];
+            const backBtn = document.getElementById('backBtn');
+            const pageTitle = document.getElementById('pageTitle');
+            
+            // Update title
+            pageTitle.textContent = pageTitles[currentPage] || 'WWTP Operations';
+            
+            // Show/hide back button
+            if (navigationStack.length > 1) {
+                backBtn.classList.remove('hidden');
+            } else {
+                backBtn.classList.add('hidden');
+            }
+        }
+
+        // Checklist functionality
+        function toggleCheck(checkbox) {
+            const item = checkbox.closest('.checklist-item');
+            item.classList.toggle('completed');
+            updateProgress();
+            saveChecklistState();
+        }
+
+        function updateProgress() {
+            const items = document.querySelectorAll('#compressor-startup .checklist-item');
+            const completed = document.querySelectorAll('#compressor-startup .checklist-item.completed');
+            const percentage = Math.round((completed.length / items.length) * 100);
+            
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            if (progressFill && progressText) {
+                progressFill.style.width = percentage + '%';
+                progressText.textContent = percentage + '%';
+            }
+        }
+
+        function resetChecklist() {
+            const items = document.querySelectorAll('#compressor-startup .checklist-item');
+            items.forEach(item => item.classList.remove('completed'));
+            updateProgress();
+            saveChecklistState();
+        }
+
+        // Save checklist state to localStorage
+        function saveChecklistState() {
+            const items = document.querySelectorAll('#compressor-startup .checklist-item');
+            const state = Array.from(items).map(item => ({
+                step: item.dataset.step,
+                completed: item.classList.contains('completed')
+            }));
+            localStorage.setItem('compressor-startup-checklist', JSON.stringify(state));
+        }
+
+        // Load checklist state from localStorage
+        function loadChecklistState() {
+            const saved = localStorage.getItem('compressor-startup-checklist');
+            if (saved) {
+                const state = JSON.parse(saved);
+                state.forEach(item => {
+                    const element = document.querySelector(`#compressor-startup .checklist-item[data-step="${item.step}"]`);
+                    if (element && item.completed) {
+                        element.classList.add('completed');
+                    }
+                });
+                updateProgress();
+            }
+        }
+
+        // PWA Installation
+        let deferredPrompt;
+        const installPrompt = document.getElementById('installPrompt');
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installPrompt.classList.add('show');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installPrompt.classList.remove('show');
+            }
+        });
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed'));
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadChecklistState();
+            updateNavigation();
+            loadJobs();
+        });
+
+        // Handle browser back button
+        window.addEventListener('popstate', (e) => {
+            if (navigationStack.length > 1) {
+                goBack();
+            }
+        });
+
+        // ===== VACTOR PRE-TRIP INSPECTION FUNCTIONS =====
+        function toggleCheckPretrip(checkbox) {
+            const item = checkbox.closest('.checklist-item');
+            item.classList.toggle('completed');
+            updateProgressPretrip();
+            saveChecklistStatePretrip();
+        }
+
+        function updateProgressPretrip() {
+            const items = document.querySelectorAll('#vactor-pretrip .checklist-item');
+            const completed = document.querySelectorAll('#vactor-pretrip .checklist-item.completed');
+            const percentage = Math.round((completed.length / items.length) * 100);
+            
+            const progressFill = document.getElementById('pretripProgressFill');
+            const progressText = document.getElementById('pretripProgressText');
+            
+            if (progressFill && progressText) {
+                progressFill.style.width = percentage + '%';
+                progressText.textContent = percentage + '%';
+            }
+        }
+
+        function resetChecklistPretrip() {
+            const items = document.querySelectorAll('#vactor-pretrip .checklist-item');
+            items.forEach(item => item.classList.remove('completed'));
+            updateProgressPretrip();
+            saveChecklistStatePretrip();
+        }
+
+        function saveChecklistStatePretrip() {
+            const items = document.querySelectorAll('#vactor-pretrip .checklist-item');
+            const state = Array.from(items).map(item => ({
+                step: item.dataset.step,
+                completed: item.classList.contains('completed')
+            }));
+            localStorage.setItem('vactor-pretrip-checklist', JSON.stringify(state));
+        }
+
+        function loadChecklistStatePretrip() {
+            const saved = localStorage.getItem('vactor-pretrip-checklist');
+            if (saved) {
+                const state = JSON.parse(saved);
+                state.forEach(item => {
+                    const element = document.querySelector(`#vactor-pretrip .checklist-item[data-step="${item.step}"]`);
+                    if (element && item.completed) {
+                        element.classList.add('completed');
+                    }
+                });
+                updateProgressPretrip();
+            }
+        }
+
+        function completePretrip() {
+            const items = document.querySelectorAll('#vactor-pretrip .checklist-item');
+            const completed = document.querySelectorAll('#vactor-pretrip .checklist-item.completed');
+            
+            if (completed.length === items.length) {
+                const now = new Date();
+                const timestamp = now.toLocaleString();
+                alert(`Pre-trip inspection completed at ${timestamp}\n\nAll ${items.length} items checked!`);
+                
+                // Save completion record
+                const records = JSON.parse(localStorage.getItem('pretrip-records') || '[]');
+                records.push({
+                    date: timestamp,
+                    itemsChecked: items.length
+                });
+                localStorage.setItem('pretrip-records', JSON.stringify(records));
+            } else {
+                alert(`Please complete all checklist items.\n\nCompleted: ${completed.length}/${items.length}`);
+            }
+        }
+
+        // ===== VACTOR JOB TRACKING FUNCTIONS =====
+        let currentJob = null;
+
+        function showNewJobForm() {
+            document.getElementById('jobListView').style.display = 'none';
+            document.getElementById('newJobForm').style.display = 'block';
+            document.getElementById('activeJobView').style.display = 'none';
+        }
+
+        function cancelNewJob() {
+            document.getElementById('jobListView').style.display = 'block';
+            document.getElementById('newJobForm').style.display = 'none';
+            document.getElementById('operatorName').value = '';
+            document.getElementById('teamMembers').value = '';
+            document.getElementById('jobLocation').value = '';
+        }
+
+        function startJob() {
+            const operator = document.getElementById('operatorName').value.trim();
+            const team = document.getElementById('teamMembers').value.trim();
+            const location = document.getElementById('jobLocation').value.trim();
+
+            if (!operator || !location) {
+                alert('Please enter operator name and job site location');
+                return;
+            }
+
+            currentJob = {
+                id: Date.now(),
+                operator: operator,
+                team: team,
+                location: location,
+                startTime: new Date().toISOString(),
+                operations: [],
+                decantCount: 0,
+                dumpCount: 0,
+                fillCount: 0,
+                active: true
+            };
+
+            // Clear form
+            document.getElementById('operatorName').value = '';
+            document.getElementById('teamMembers').value = '';
+            document.getElementById('jobLocation').value = '';
+
+            // Show active job view
+            document.getElementById('jobListView').style.display = 'none';
+            document.getElementById('newJobForm').style.display = 'none';
+            document.getElementById('activeJobView').style.display = 'block';
+
+            updateActiveJobDisplay();
+        }
+
+        function updateActiveJobDisplay() {
+            if (!currentJob) return;
+
+            const startDate = new Date(currentJob.startTime);
+            const info = `
+                <div style="font-size: 0.9rem; color: var(--text);">
+                    <div><strong>Operator:</strong> ${currentJob.operator}</div>
+                    ${currentJob.team ? `<div><strong>Team:</strong> ${currentJob.team}</div>` : ''}
+                    <div><strong>Location:</strong> ${currentJob.location}</div>
+                    <div><strong>Started:</strong> ${startDate.toLocaleString()}</div>
+                </div>
+            `;
+            document.getElementById('activeJobInfo').innerHTML = info;
+
+            // Update counts
+            document.getElementById('decantCount').textContent = `${currentJob.decantCount} times`;
+            document.getElementById('dumpCount').textContent = `${currentJob.dumpCount} times`;
+            document.getElementById('fillCount').textContent = `${currentJob.fillCount} times`;
+
+            // Update operation log
+            updateOperationLog();
+        }
+
+        function logOperation(type) {
+            if (!currentJob) return;
+
+            const operation = {
+                type: type,
+                timestamp: new Date().toISOString()
+            };
+
+            currentJob.operations.push(operation);
+
+            // Update counts
+            if (type === 'DECANT') currentJob.decantCount++;
+            else if (type === 'DUMP') currentJob.dumpCount++;
+            else if (type === 'FILL') currentJob.fillCount++;
+
+            updateActiveJobDisplay();
+
+            // Visual feedback
+            const card = event.target.closest('.card');
+            if (card) {
+                card.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    card.style.transform = 'translateY(-4px)';
+                }, 100);
+            }
+        }
+
+        function updateOperationLog() {
+            const logDiv = document.getElementById('operationLog');
+            
+            if (currentJob.operations.length === 0) {
+                logDiv.innerHTML = '<div style="text-align: center; color: var(--text-light); padding: 2rem;">No operations logged yet</div>';
+                return;
+            }
+
+            const html = currentJob.operations
+                .slice()
+                .reverse()
+                .map((op, index) => {
+                    const time = new Date(op.timestamp);
+                    const icon = op.type === 'DECANT' ? '💧' : op.type === 'DUMP' ? '🗑️' : '💦';
+                    return `
+                        <div style="background: var(--bg); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 1rem;">
+                            <span style="font-size: 1.5rem;">${icon}</span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--primary);">${op.type}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-light);">${time.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .join('');
+
+            logDiv.innerHTML = html;
+        }
+
+        function viewJobSummary() {
+            if (!currentJob) return;
+
+            const startTime = new Date(currentJob.startTime);
+            const duration = Math.round((Date.now() - startTime.getTime()) / 1000 / 60); // minutes
+
+            const summary = `
+JOB SUMMARY
+===========
+
+Operator: ${currentJob.operator}
+${currentJob.team ? `Team: ${currentJob.team}` : ''}
+Location: ${currentJob.location}
+Start Time: ${startTime.toLocaleString()}
+Duration: ${duration} minutes
+
+OPERATIONS:
+- Decants: ${currentJob.decantCount}
+- Dumps: ${currentJob.dumpCount}
+- Fills: ${currentJob.fillCount}
+- Total Operations: ${currentJob.operations.length}
+            `;
+
+            alert(summary);
+        }
+
+        function completeJob() {
+            if (!currentJob) return;
+
+            const confirmed = confirm('Complete this job? This will save the job data and send to Google Sheets.');
+            
+            if (confirmed) {
+                // Mark as completed
+                currentJob.active = false;
+                currentJob.endTime = new Date().toISOString();
+
+                // Save to completed jobs locally
+                const jobs = JSON.parse(localStorage.getItem('vactor-jobs') || '[]');
+                jobs.unshift(currentJob);
+                localStorage.setItem('vactor-jobs', JSON.stringify(jobs));
+
+                // Send to Google Sheets
+                sendToGoogleSheets(currentJob);
+
+                // Reset
+                currentJob = null;
+
+                // Return to job list
+                document.getElementById('jobListView').style.display = 'block';
+                document.getElementById('newJobForm').style.display = 'none';
+                document.getElementById('activeJobView').style.display = 'none';
+
+                loadJobs();
+            }
+        }
+
+        // ===== GOOGLE SHEETS INTEGRATION =====
+        function sendToGoogleSheets(job) {
+            // Get the Google Sheets webhook URL from settings
+            const webhookUrl = localStorage.getItem('google-sheets-webhook-url');
+            
+            if (!webhookUrl || webhookUrl.trim() === '') {
+                console.log('No Google Sheets webhook configured - data saved locally only');
+                return;
+            }
+
+            // Calculate duration in minutes
+            const startTime = new Date(job.startTime);
+            const endTime = new Date(job.endTime);
+            const durationMinutes = Math.round((endTime - startTime) / 1000 / 60);
+
+            // Prepare data for Google Sheets
+            const data = {
+                timestamp: startTime.toLocaleString(),
+                date: startTime.toLocaleDateString(),
+                time: startTime.toLocaleTimeString(),
+                operator: job.operator,
+                team: job.team || 'N/A',
+                location: job.location,
+                durationMinutes: durationMinutes,
+                decantCount: job.decantCount,
+                dumpCount: job.dumpCount,
+                fillCount: job.fillCount,
+                totalOperations: job.operations.length,
+                startTime: job.startTime,
+                endTime: job.endTime,
+                jobId: job.id
+            };
+
+            // Send to Google Sheets
+            fetch(webhookUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(() => {
+                console.log('Data sent to Google Sheets successfully');
+                showNotification('✓ Job data synced to Google Sheets', 'success');
+            })
+            .catch((error) => {
+                console.error('Error sending to Google Sheets:', error);
+                showNotification('⚠ Could not sync to Google Sheets - data saved locally', 'warning');
+            });
+        }
+
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${type === 'success' ? 'var(--success)' : 'var(--warning)'};
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 8px;
+                box-shadow: var(--shadow-lg);
+                z-index: 1000;
+                animation: slideDown 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideDown {
+                from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+                to { transform: translateX(-50%) translateY(0); opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translateX(-50%) translateY(0); opacity: 1; }
+                to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        function loadJobs() {
+            const jobs = JSON.parse(localStorage.getItem('vactor-jobs') || '[]');
+            const jobsList = document.getElementById('jobsList');
+
+            if (jobs.length === 0) {
+                jobsList.innerHTML = '<div style="text-align: center; color: var(--text-light); padding: 2rem;">No jobs logged yet</div>';
+                return;
+            }
+
+            const html = jobs.slice(0, 10).map(job => {
+                const startTime = new Date(job.startTime);
+                const endTime = job.endTime ? new Date(job.endTime) : null;
+                const duration = endTime ? Math.round((endTime.getTime() - startTime.getTime()) / 1000 / 60) : 0;
+
+                return `
+                    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                            <div>
+                                <div style="font-weight: 600; color: var(--primary);">${job.location}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-light);">${startTime.toLocaleDateString()} ${startTime.toLocaleTimeString()}</div>
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-light);">
+                                ${duration} min
+                            </div>
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--text); margin-bottom: 0.5rem;">
+                            <strong>Operator:</strong> ${job.operator}
+                        </div>
+                        <div style="display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-light);">
+                            <span>💧 ${job.decantCount}</span>
+                            <span>🗑️ ${job.dumpCount}</span>
+                            <span>💦 ${job.fillCount}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            jobsList.innerHTML = html;
+        }
+
+        // Load pretrip checklist on page load
+        window.addEventListener('load', () => {
+            loadChecklistStatePretrip();
+            loadSettingsDisplay();
+        });
+
+        // ===== SETTINGS FUNCTIONS =====
+        function saveSettings() {
+            const webhookUrl = document.getElementById('webhookUrl').value.trim();
+            localStorage.setItem('google-sheets-webhook-url', webhookUrl);
+            
+            updateSettingsStatus();
+            showNotification('✓ Settings saved successfully', 'success');
+        }
+
+        function testWebhook() {
+            const webhookUrl = document.getElementById('webhookUrl').value.trim();
+            
+            if (!webhookUrl) {
+                alert('Please enter a webhook URL first');
+                return;
+            }
+
+            // Send test data
+            const testData = {
+                timestamp: new Date().toLocaleString(),
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString(),
+                operator: 'TEST USER',
+                team: 'TEST TEAM',
+                location: 'TEST LOCATION',
+                durationMinutes: 0,
+                decantCount: 0,
+                dumpCount: 0,
+                fillCount: 0,
+                totalOperations: 0,
+                jobId: 'TEST-' + Date.now()
+            };
+
+            showNotification('Testing connection...', 'success');
+
+            fetch(webhookUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(testData)
+            })
+            .then(() => {
+                showNotification('✓ Connection successful! Check your Google Sheet for a TEST row.', 'success');
+            })
+            .catch((error) => {
+                showNotification('✗ Connection failed. Please check the URL.', 'warning');
+                console.error('Test error:', error);
+            });
+        }
+
+        function loadSettingsDisplay() {
+            const webhookUrl = localStorage.getItem('google-sheets-webhook-url') || '';
+            const urlInput = document.getElementById('webhookUrl');
+            
+            if (urlInput) {
+                urlInput.value = webhookUrl;
+            }
+            
+            updateSettingsStatus();
+        }
+
+        function updateSettingsStatus() {
+            const webhookUrl = localStorage.getItem('google-sheets-webhook-url') || '';
+            const statusDiv = document.getElementById('settingsStatus');
+            
+            if (!statusDiv) return;
+
+            if (webhookUrl) {
+                const shortUrl = webhookUrl.substring(0, 50) + '...';
+                statusDiv.innerHTML = `
+                    <div style="color: var(--success); font-weight: 600; margin-bottom: 0.5rem;">✓ Google Sheets Connected</div>
+                    <div style="font-size: 0.85rem; color: var(--text-light); font-family: monospace; word-break: break-all;">
+                        ${shortUrl}
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text); margin-top: 0.5rem;">
+                        Job data will automatically sync when operators complete jobs.
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div style="font-size: 0.9rem; color: var(--text-light);">
+                        No webhook configured - data saves to device only
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
