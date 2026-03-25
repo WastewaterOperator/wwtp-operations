@@ -495,6 +495,11 @@
         <!-- HOME PAGE -->
         <div id="home" class="page active">
             <div class="grid">
+                <div class="card" onclick="navigate('digital-twin')">
+                    <span class="card-icon">🏭</span>
+                    <div class="card-title">Digital Twin</div>
+                    <div class="card-description">Equipment status & anomalies</div>
+                </div>
                 <div class="card" onclick="navigate('sops')">
                     <span class="card-icon">📋</span>
                     <div class="card-title">SOPs</div>
@@ -515,6 +520,1059 @@
                     <div class="card-title">Settings</div>
                     <div class="card-description">App configuration</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- DIGITAL TWIN MAIN PAGE -->
+        <div id="digital-twin" class="page">
+            <div class="grid">
+                <div class="card" onclick="navigate('dt-dashboard')">
+                    <span class="card-icon">📊</span>
+                    <div class="card-title">Dashboard</div>
+                    <div class="card-description">Active issues & status list</div>
+                </div>
+                <div class="card" onclick="navigate('dt-visual')">
+                    <span class="card-icon">🗺️</span>
+                    <div class="card-title">Visual Map</div>
+                    <div class="card-description">Process flow diagram view</div>
+                </div>
+                <div class="card" onclick="navigate('dt-add-equipment')">
+                    <span class="card-icon">➕</span>
+                    <div class="card-title">Update Status</div>
+                    <div class="card-description">Report equipment issue</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DIGITAL TWIN DASHBOARD (LIST VIEW) -->
+        <div id="dt-dashboard" class="page">
+            <div class="checklist">
+                <div class="checklist-header">
+                    <div class="checklist-title">Equipment Status Dashboard</div>
+                    <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem;" id="lastSyncDisplay">
+                        Loading...
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                    <button class="btn btn-primary" onclick="navigate('dt-add-equipment')" style="flex: 1;">
+                        + Report Issue
+                    </button>
+                    <button class="btn btn-secondary" onclick="refreshDashboard()" style="flex: 1;">
+                        ↻ Refresh
+                    </button>
+                </div>
+
+                <!-- Summary Stats -->
+                <div class="grid" style="margin-bottom: 2rem;">
+                    <div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 1rem; border-radius: 8px;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #dc2626;" id="manualCount">0</div>
+                        <div style="color: #7f1d1d; font-weight: 600;">Manual Operation</div>
+                    </div>
+                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 8px;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #f59e0b;" id="degradedCount">0</div>
+                        <div style="color: #78350f; font-weight: 600;">Degraded Mode</div>
+                    </div>
+                    <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 1rem; border-radius: 8px;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #3b82f6;" id="totalIssues">0</div>
+                        <div style="color: #1e3a8a; font-weight: 600;">Total Active Issues</div>
+                    </div>
+                </div>
+
+                <!-- Active Issues List -->
+                <div id="issuesList"></div>
+            </div>
+        </div>
+
+        <!-- DIGITAL TWIN VISUAL MAP -->
+        <div id="dt-visual" class="page">
+            <div class="checklist">
+                <div class="checklist-header">
+                    <div class="checklist-title">Process Flow - Equipment Status</div>
+                </div>
+
+                <div style="background: var(--bg); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <div style="display: flex; gap: 2rem; flex-wrap: wrap; font-size: 0.9rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background: #10b981;"></div>
+                            <span>Auto / Normal</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background: #f59e0b;"></div>
+                            <span>Auto / Degraded</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background: #dc2626;"></div>
+                            <span>Manual</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background: #6b7280;"></div>
+                            <span>Out of Service</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SVG Process Flow Diagram -->
+                <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: var(--shadow); overflow-x: auto;">
+                    <svg id="processFlow" width="100%" height="1400" viewBox="0 0 1600 1400" style="min-width: 1400px;">
+                        <!-- Background Grid -->
+                        <defs>
+                            <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                                <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+                            </pattern>
+                            <!-- Arrow marker definition -->
+                            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                <polygon points="0 0, 10 3, 0 6" fill="#334155" />
+                            </marker>
+                        </defs>
+                        <rect width="1600" height="1400" fill="url(#grid)" />
+                        
+                        <!-- Title -->
+                        <text x="800" y="40" font-size="24" font-weight="bold" fill="#0a4a6e" text-anchor="middle">Complete Process Flow - Clarifiers & Reactors</text>
+                        
+                        <!-- Legend -->
+                        <g transform="translate(50, 70)">
+                            <text x="0" y="0" font-size="14" font-weight="bold" fill="#0a4a6e">Status Legend:</text>
+                            <circle cx="120" cy="-5" r="8" fill="#10b981"/>
+                            <text x="135" y="0" font-size="12">Auto/Normal</text>
+                            <circle cx="240" cy="-5" r="8" fill="#f59e0b"/>
+                            <text x="255" y="0" font-size="12">Auto/Degraded</text>
+                            <circle cx="370" cy="-5" r="8" fill="#dc2626"/>
+                            <text x="385" y="0" font-size="12">Manual</text>
+                            <circle cx="470" cy="-5" r="8" fill="#6b7280"/>
+                            <text x="485" y="0" font-size="12">Out of Service</text>
+                        </g>
+                        
+                        <!-- CLARIFIERS SECTION -->
+                        <text x="800" y="130" font-size="20" font-weight="bold" fill="#0a4a6e" text-anchor="middle">Clarifier System (12 Total)</text>
+                        
+                                                <!-- Clarifier 1 -->
+                        <g transform="translate(80, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C1</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C1-INF-FV" onclick="showEquipmentDetails('C1-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C1-EFF-FM" onclick="showEquipmentDetails('C1-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C1-UF-FV" onclick="showEquipmentDetails('C1-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C1-UF-FM" onclick="showEquipmentDetails('C1-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 2 -->
+                        <g transform="translate(190, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C2</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C2-INF-FV" onclick="showEquipmentDetails('C2-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C2-EFF-FM" onclick="showEquipmentDetails('C2-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C2-UF-FV" onclick="showEquipmentDetails('C2-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C2-UF-FM" onclick="showEquipmentDetails('C2-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 3 -->
+                        <g transform="translate(300, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C3</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C3-INF-FV" onclick="showEquipmentDetails('C3-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C3-EFF-FM" onclick="showEquipmentDetails('C3-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C3-UF-FV" onclick="showEquipmentDetails('C3-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C3-UF-FM" onclick="showEquipmentDetails('C3-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 4 -->
+                        <g transform="translate(410, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C4</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C4-INF-FV" onclick="showEquipmentDetails('C4-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C4-EFF-FM" onclick="showEquipmentDetails('C4-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C4-UF-FV" onclick="showEquipmentDetails('C4-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C4-UF-FM" onclick="showEquipmentDetails('C4-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 5 -->
+                        <g transform="translate(520, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C5</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C5-INF-FV" onclick="showEquipmentDetails('C5-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C5-EFF-FM" onclick="showEquipmentDetails('C5-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C5-UF-FV" onclick="showEquipmentDetails('C5-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C5-UF-FM" onclick="showEquipmentDetails('C5-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 6 -->
+                        <g transform="translate(630, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C6</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C6-INF-FV" onclick="showEquipmentDetails('C6-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C6-EFF-FM" onclick="showEquipmentDetails('C6-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C6-UF-FV" onclick="showEquipmentDetails('C6-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C6-UF-FM" onclick="showEquipmentDetails('C6-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 7 -->
+                        <g transform="translate(740, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C7</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C7-INF-FV" onclick="showEquipmentDetails('C7-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C7-EFF-FM" onclick="showEquipmentDetails('C7-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C7-UF-FV" onclick="showEquipmentDetails('C7-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C7-UF-FM" onclick="showEquipmentDetails('C7-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 8 -->
+                        <g transform="translate(850, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C8</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C8-INF-FV" onclick="showEquipmentDetails('C8-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C8-EFF-FM" onclick="showEquipmentDetails('C8-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C8-UF-FV" onclick="showEquipmentDetails('C8-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C8-UF-FM" onclick="showEquipmentDetails('C8-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 9 -->
+                        <g transform="translate(960, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C9</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C9-INF-FV" onclick="showEquipmentDetails('C9-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C9-EFF-FM" onclick="showEquipmentDetails('C9-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C9-UF-FV" onclick="showEquipmentDetails('C9-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C9-UF-FM" onclick="showEquipmentDetails('C9-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 10 -->
+                        <g transform="translate(1070, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C10</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C10-INF-FV" onclick="showEquipmentDetails('C10-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C10-EFF-FM" onclick="showEquipmentDetails('C10-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C10-UF-FV" onclick="showEquipmentDetails('C10-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C10-UF-FM" onclick="showEquipmentDetails('C10-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 11 -->
+                        <g transform="translate(1180, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C11</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C11-INF-FV" onclick="showEquipmentDetails('C11-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C11-EFF-FM" onclick="showEquipmentDetails('C11-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C11-UF-FV" onclick="showEquipmentDetails('C11-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C11-UF-FM" onclick="showEquipmentDetails('C11-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                                                                        <!-- Clarifier 12 -->
+                        <g transform="translate(1290, 160)">
+                            <!-- Clarifier circle -->
+                            <circle cx="50" cy="100" r="70" fill="#f0f9ff" stroke="#334155" stroke-width="3"/>
+                            <text x="50" y="70" text-anchor="middle" font-size="28" font-weight="bold" fill="#0a4a6e">C12</text>
+                            
+                            <!-- Inf FV -->
+                            <g id="C12-INF-FV" onclick="showEquipmentDetails('C12-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="85" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="99" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Eff FM -->
+                            <g id="C12-EFF-FM" onclick="showEquipmentDetails('C12-EFF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="110" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="124" text-anchor="middle" font-size="10" font-weight="bold">Eff FM</text>
+                            </g>
+                            
+                            <!-- UF FV -->
+                            <g id="C12-UF-FV" onclick="showEquipmentDetails('C12-UF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="135" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="149" text-anchor="middle" font-size="10" font-weight="bold">UF FV</text>
+                            </g>
+                            
+                            <!-- UF FM -->
+                            <g id="C12-UF-FM" onclick="showEquipmentDetails('C12-UF-FM')" style="cursor: pointer;">
+                                <rect x="10" y="160" width="80" height="22" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="50" y="174" text-anchor="middle" font-size="10" font-weight="bold">UF FM</text>
+                            </g>
+                        </g>
+                        
+                        <!-- Divider line between Clarifiers and Reactors -->
+                        <line x1="50" y1="420" x2="1550" y2="420" stroke="#334155" stroke-width="2" stroke-dasharray="10,5"/>
+                        
+                        <!-- REACTORS SECTION -->
+                        <text x="800" y="470" font-size="20" font-weight="bold" fill="#0a4a6e" text-anchor="middle">Reactor System (8 Total)</text>
+                        <!-- Reactor 1 -->
+                        <g transform="translate(100, 500)">
+                            <!-- Reactor Box -->
+                            <rect x="0" y="0" width="140" height="450" rx="5" fill="#f8fafc" stroke="#334155" stroke-width="3"/>
+                            <text x="70" y="30" text-anchor="middle" font-size="32" font-weight="bold" fill="#0a4a6e">R1</text>
+                            
+                            <!-- Weir at top -->
+                            <rect x="10" y="50" width="120" height="30" rx="3" fill="#dbeafe" stroke="#334155" stroke-width="2"/>
+                            <text x="70" y="70" text-anchor="middle" font-size="12" font-weight="bold">Weir</text>
+                            <g id="R1-WEIR" onclick="showEquipmentDetails('R1-WEIR')" style="cursor: pointer;">
+                                <circle cx="70" cy="65" r="15" fill="#10b981" opacity="0.3"/>
+                            </g>
+                            
+                            <!-- Mixers M4, M3, M2, M1 (top to bottom) -->
+                            <g id="R1-M4" onclick="showEquipmentDetails('R1-M4')" style="cursor: pointer;">
+                                <circle cx="70" cy="130" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="135" text-anchor="middle" font-size="14" font-weight="bold">M4</text>
+                            </g>
+                            
+                            <g id="R1-M3" onclick="showEquipmentDetails('R1-M3')" style="cursor: pointer;">
+                                <circle cx="70" cy="210" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="215" text-anchor="middle" font-size="14" font-weight="bold">M3</text>
+                            </g>
+                            
+                            <g id="R1-M2" onclick="showEquipmentDetails('R1-M2')" style="cursor: pointer;">
+                                <circle cx="70" cy="290" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="295" text-anchor="middle" font-size="14" font-weight="bold">M2</text>
+                            </g>
+                            
+                            <g id="R1-M1" onclick="showEquipmentDetails('R1-M1')" style="cursor: pointer;">
+                                <circle cx="70" cy="370" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="375" text-anchor="middle" font-size="14" font-weight="bold">M1</text>
+                            </g>
+                            
+                            <!-- Inf FV (bottom left) -->
+                            <g id="R1-INF-FV" onclick="showEquipmentDetails('R1-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="428" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            
+                            <!-- Inf FM (bottom left, below FV) -->
+                            <g id="R1-INF-FM" onclick="showEquipmentDetails('R1-INF-FM')" style="cursor: pointer;">
+                                <circle cx="35" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="468" text-anchor="middle" font-size="9" font-weight="bold">Inf FM</text>
+                            </g>
+                            
+                            <!-- RAS FV (bottom right) -->
+                            <g id="R1-RAS-FV" onclick="showEquipmentDetails('R1-RAS-FV')" style="cursor: pointer;">
+                                <rect x="80" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="428" text-anchor="middle" font-size="10" font-weight="bold">RAS FV</text>
+                            </g>
+                            
+                            <!-- RAS FM (bottom right, below FV) -->
+                            <g id="R1-RAS-FM" onclick="showEquipmentDetails('R1-RAS-FM')" style="cursor: pointer;">
+                                <circle cx="105" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="468" text-anchor="middle" font-size="9" font-weight="bold">RAS FM</text>
+                            </g>
+                            
+                            <!-- Flow lines -->
+                            <line x1="35" y1="483" x2="35" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="105" y1="483" x2="105" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Reactor 2 -->
+                        <g transform="translate(260, 500)">
+                            <rect x="0" y="0" width="140" height="450" rx="5" fill="#f8fafc" stroke="#334155" stroke-width="3"/>
+                            <text x="70" y="30" text-anchor="middle" font-size="32" font-weight="bold" fill="#0a4a6e">R2</text>
+                            
+                            <rect x="10" y="50" width="120" height="30" rx="3" fill="#dbeafe" stroke="#334155" stroke-width="2"/>
+                            <text x="70" y="70" text-anchor="middle" font-size="12" font-weight="bold">Weir</text>
+                            <g id="R2-WEIR" onclick="showEquipmentDetails('R2-WEIR')" style="cursor: pointer;">
+                                <circle cx="70" cy="65" r="15" fill="#10b981" opacity="0.3"/>
+                            </g>
+                            
+                            <g id="R2-M4" onclick="showEquipmentDetails('R2-M4')" style="cursor: pointer;">
+                                <circle cx="70" cy="130" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="135" text-anchor="middle" font-size="14" font-weight="bold">M4</text>
+                            </g>
+                            <g id="R2-M3" onclick="showEquipmentDetails('R2-M3')" style="cursor: pointer;">
+                                <circle cx="70" cy="210" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="215" text-anchor="middle" font-size="14" font-weight="bold">M3</text>
+                            </g>
+                            <g id="R2-M2" onclick="showEquipmentDetails('R2-M2')" style="cursor: pointer;">
+                                <circle cx="70" cy="290" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="295" text-anchor="middle" font-size="14" font-weight="bold">M2</text>
+                            </g>
+                            <g id="R2-M1" onclick="showEquipmentDetails('R2-M1')" style="cursor: pointer;">
+                                <circle cx="70" cy="370" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="375" text-anchor="middle" font-size="14" font-weight="bold">M1</text>
+                            </g>
+                            
+                            <g id="R2-INF-FV" onclick="showEquipmentDetails('R2-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="428" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            <g id="R2-INF-FM" onclick="showEquipmentDetails('R2-INF-FM')" style="cursor: pointer;">
+                                <circle cx="35" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="468" text-anchor="middle" font-size="9" font-weight="bold">Inf FM</text>
+                            </g>
+                            <g id="R2-RAS-FV" onclick="showEquipmentDetails('R2-RAS-FV')" style="cursor: pointer;">
+                                <rect x="80" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="428" text-anchor="middle" font-size="10" font-weight="bold">RAS FV</text>
+                            </g>
+                            <g id="R2-RAS-FM" onclick="showEquipmentDetails('R2-RAS-FM')" style="cursor: pointer;">
+                                <circle cx="105" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="468" text-anchor="middle" font-size="9" font-weight="bold">RAS FM</text>
+                            </g>
+                            
+                            <line x1="35" y1="483" x2="35" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="105" y1="483" x2="105" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Reactor 3 -->
+                        <g transform="translate(420, 500)">
+                            <rect x="0" y="0" width="140" height="450" rx="5" fill="#f8fafc" stroke="#334155" stroke-width="3"/>
+                            <text x="70" y="30" text-anchor="middle" font-size="32" font-weight="bold" fill="#0a4a6e">R3</text>
+                            
+                            <rect x="10" y="50" width="120" height="30" rx="3" fill="#dbeafe" stroke="#334155" stroke-width="2"/>
+                            <text x="70" y="70" text-anchor="middle" font-size="12" font-weight="bold">Weir</text>
+                            <g id="R3-WEIR" onclick="showEquipmentDetails('R3-WEIR')" style="cursor: pointer;">
+                                <circle cx="70" cy="65" r="15" fill="#10b981" opacity="0.3"/>
+                            </g>
+                            
+                            <g id="R3-M4" onclick="showEquipmentDetails('R3-M4')" style="cursor: pointer;">
+                                <circle cx="70" cy="130" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="135" text-anchor="middle" font-size="14" font-weight="bold">M4</text>
+                            </g>
+                            <g id="R3-M3" onclick="showEquipmentDetails('R3-M3')" style="cursor: pointer;">
+                                <circle cx="70" cy="210" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="215" text-anchor="middle" font-size="14" font-weight="bold">M3</text>
+                            </g>
+                            <g id="R3-M2" onclick="showEquipmentDetails('R3-M2')" style="cursor: pointer;">
+                                <circle cx="70" cy="290" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="295" text-anchor="middle" font-size="14" font-weight="bold">M2</text>
+                            </g>
+                            <g id="R3-M1" onclick="showEquipmentDetails('R3-M1')" style="cursor: pointer;">
+                                <circle cx="70" cy="370" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="375" text-anchor="middle" font-size="14" font-weight="bold">M1</text>
+                            </g>
+                            
+                            <g id="R3-INF-FV" onclick="showEquipmentDetails('R3-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="428" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            <g id="R3-INF-FM" onclick="showEquipmentDetails('R3-INF-FM')" style="cursor: pointer;">
+                                <circle cx="35" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="468" text-anchor="middle" font-size="9" font-weight="bold">Inf FM</text>
+                            </g>
+                            <g id="R3-RAS-FV" onclick="showEquipmentDetails('R3-RAS-FV')" style="cursor: pointer;">
+                                <rect x="80" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="428" text-anchor="middle" font-size="10" font-weight="bold">RAS FV</text>
+                            </g>
+                            <g id="R3-RAS-FM" onclick="showEquipmentDetails('R3-RAS-FM')" style="cursor: pointer;">
+                                <circle cx="105" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="468" text-anchor="middle" font-size="9" font-weight="bold">RAS FM</text>
+                            </g>
+                            
+                            <line x1="35" y1="483" x2="35" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="105" y1="483" x2="105" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Reactor 4 -->
+                        <g transform="translate(580, 500)">
+                            <rect x="0" y="0" width="140" height="450" rx="5" fill="#f8fafc" stroke="#334155" stroke-width="3"/>
+                            <text x="70" y="30" text-anchor="middle" font-size="32" font-weight="bold" fill="#0a4a6e">R4</text>
+                            
+                            <rect x="10" y="50" width="120" height="30" rx="3" fill="#dbeafe" stroke="#334155" stroke-width="2"/>
+                            <text x="70" y="70" text-anchor="middle" font-size="12" font-weight="bold">Weir</text>
+                            <g id="R4-WEIR" onclick="showEquipmentDetails('R4-WEIR')" style="cursor: pointer;">
+                                <circle cx="70" cy="65" r="15" fill="#10b981" opacity="0.3"/>
+                            </g>
+                            
+                            <g id="R4-M4" onclick="showEquipmentDetails('R4-M4')" style="cursor: pointer;">
+                                <circle cx="70" cy="130" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="135" text-anchor="middle" font-size="14" font-weight="bold">M4</text>
+                            </g>
+                            <g id="R4-M3" onclick="showEquipmentDetails('R4-M3')" style="cursor: pointer;">
+                                <circle cx="70" cy="210" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="215" text-anchor="middle" font-size="14" font-weight="bold">M3</text>
+                            </g>
+                            <g id="R4-M2" onclick="showEquipmentDetails('R4-M2')" style="cursor: pointer;">
+                                <circle cx="70" cy="290" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="295" text-anchor="middle" font-size="14" font-weight="bold">M2</text>
+                            </g>
+                            <g id="R4-M1" onclick="showEquipmentDetails('R4-M1')" style="cursor: pointer;">
+                                <circle cx="70" cy="370" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="375" text-anchor="middle" font-size="14" font-weight="bold">M1</text>
+                            </g>
+                            
+                            <g id="R4-INF-FV" onclick="showEquipmentDetails('R4-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="428" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            <g id="R4-INF-FM" onclick="showEquipmentDetails('R4-INF-FM')" style="cursor: pointer;">
+                                <circle cx="35" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="468" text-anchor="middle" font-size="9" font-weight="bold">Inf FM</text>
+                            </g>
+                            <g id="R4-RAS-FV" onclick="showEquipmentDetails('R4-RAS-FV')" style="cursor: pointer;">
+                                <rect x="80" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="428" text-anchor="middle" font-size="10" font-weight="bold">RAS FV</text>
+                            </g>
+                            <g id="R4-RAS-FM" onclick="showEquipmentDetails('R4-RAS-FM')" style="cursor: pointer;">
+                                <circle cx="105" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="468" text-anchor="middle" font-size="9" font-weight="bold">RAS FM</text>
+                            </g>
+                            
+                            <line x1="35" y1="483" x2="35" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="105" y1="483" x2="105" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Reactor 5 -->
+                        <g transform="translate(840, 500)">
+                            <rect x="0" y="0" width="140" height="450" rx="5" fill="#f8fafc" stroke="#334155" stroke-width="3"/>
+                            <text x="70" y="30" text-anchor="middle" font-size="32" font-weight="bold" fill="#0a4a6e">R5</text>
+                            
+                            <rect x="10" y="50" width="120" height="30" rx="3" fill="#dbeafe" stroke="#334155" stroke-width="2"/>
+                            <text x="70" y="70" text-anchor="middle" font-size="12" font-weight="bold">Weir</text>
+                            <g id="R5-WEIR" onclick="showEquipmentDetails('R5-WEIR')" style="cursor: pointer;">
+                                <circle cx="70" cy="65" r="15" fill="#10b981" opacity="0.3"/>
+                            </g>
+                            
+                            <g id="R5-M4" onclick="showEquipmentDetails('R5-M4')" style="cursor: pointer;">
+                                <circle cx="70" cy="130" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="135" text-anchor="middle" font-size="14" font-weight="bold">M4</text>
+                            </g>
+                            <g id="R5-M3" onclick="showEquipmentDetails('R5-M3')" style="cursor: pointer;">
+                                <circle cx="70" cy="210" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="215" text-anchor="middle" font-size="14" font-weight="bold">M3</text>
+                            </g>
+                            <g id="R5-M2" onclick="showEquipmentDetails('R5-M2')" style="cursor: pointer;">
+                                <circle cx="70" cy="290" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="295" text-anchor="middle" font-size="14" font-weight="bold">M2</text>
+                            </g>
+                            <g id="R5-M1" onclick="showEquipmentDetails('R5-M1')" style="cursor: pointer;">
+                                <circle cx="70" cy="370" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="375" text-anchor="middle" font-size="14" font-weight="bold">M1</text>
+                            </g>
+                            
+                            <g id="R5-INF-FV" onclick="showEquipmentDetails('R5-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="428" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            <g id="R5-INF-FM" onclick="showEquipmentDetails('R5-INF-FM')" style="cursor: pointer;">
+                                <circle cx="35" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="468" text-anchor="middle" font-size="9" font-weight="bold">Inf FM</text>
+                            </g>
+                            <g id="R5-RAS-FV" onclick="showEquipmentDetails('R5-RAS-FV')" style="cursor: pointer;">
+                                <rect x="80" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="428" text-anchor="middle" font-size="10" font-weight="bold">RAS FV</text>
+                            </g>
+                            <g id="R5-RAS-FM" onclick="showEquipmentDetails('R5-RAS-FM')" style="cursor: pointer;">
+                                <circle cx="105" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="468" text-anchor="middle" font-size="9" font-weight="bold">RAS FM</text>
+                            </g>
+                            
+                            <line x1="35" y1="483" x2="35" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="105" y1="483" x2="105" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Reactor 6 -->
+                        <g transform="translate(1000, 500)">
+                            <rect x="0" y="0" width="140" height="450" rx="5" fill="#f8fafc" stroke="#334155" stroke-width="3"/>
+                            <text x="70" y="30" text-anchor="middle" font-size="32" font-weight="bold" fill="#0a4a6e">R6</text>
+                            
+                            <rect x="10" y="50" width="120" height="30" rx="3" fill="#dbeafe" stroke="#334155" stroke-width="2"/>
+                            <text x="70" y="70" text-anchor="middle" font-size="12" font-weight="bold">Weir</text>
+                            <g id="R6-WEIR" onclick="showEquipmentDetails('R6-WEIR')" style="cursor: pointer;">
+                                <circle cx="70" cy="65" r="15" fill="#10b981" opacity="0.3"/>
+                            </g>
+                            
+                            <g id="R6-M4" onclick="showEquipmentDetails('R6-M4')" style="cursor: pointer;">
+                                <circle cx="70" cy="130" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="135" text-anchor="middle" font-size="14" font-weight="bold">M4</text>
+                            </g>
+                            <g id="R6-M3" onclick="showEquipmentDetails('R6-M3')" style="cursor: pointer;">
+                                <circle cx="70" cy="210" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="215" text-anchor="middle" font-size="14" font-weight="bold">M3</text>
+                            </g>
+                            <g id="R6-M2" onclick="showEquipmentDetails('R6-M2')" style="cursor: pointer;">
+                                <circle cx="70" cy="290" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="295" text-anchor="middle" font-size="14" font-weight="bold">M2</text>
+                            </g>
+                            <g id="R6-M1" onclick="showEquipmentDetails('R6-M1')" style="cursor: pointer;">
+                                <circle cx="70" cy="370" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="375" text-anchor="middle" font-size="14" font-weight="bold">M1</text>
+                            </g>
+                            
+                            <g id="R6-INF-FV" onclick="showEquipmentDetails('R6-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="428" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            <g id="R6-INF-FM" onclick="showEquipmentDetails('R6-INF-FM')" style="cursor: pointer;">
+                                <circle cx="35" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="468" text-anchor="middle" font-size="9" font-weight="bold">Inf FM</text>
+                            </g>
+                            <g id="R6-RAS-FV" onclick="showEquipmentDetails('R6-RAS-FV')" style="cursor: pointer;">
+                                <rect x="80" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="428" text-anchor="middle" font-size="10" font-weight="bold">RAS FV</text>
+                            </g>
+                            <g id="R6-RAS-FM" onclick="showEquipmentDetails('R6-RAS-FM')" style="cursor: pointer;">
+                                <circle cx="105" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="468" text-anchor="middle" font-size="9" font-weight="bold">RAS FM</text>
+                            </g>
+                            
+                            <line x1="35" y1="483" x2="35" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="105" y1="483" x2="105" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Reactor 7 -->
+                        <g transform="translate(1160, 500)">
+                            <rect x="0" y="0" width="140" height="450" rx="5" fill="#f8fafc" stroke="#334155" stroke-width="3"/>
+                            <text x="70" y="30" text-anchor="middle" font-size="32" font-weight="bold" fill="#0a4a6e">R7</text>
+                            
+                            <rect x="10" y="50" width="120" height="30" rx="3" fill="#dbeafe" stroke="#334155" stroke-width="2"/>
+                            <text x="70" y="70" text-anchor="middle" font-size="12" font-weight="bold">Weir</text>
+                            <g id="R7-WEIR" onclick="showEquipmentDetails('R7-WEIR')" style="cursor: pointer;">
+                                <circle cx="70" cy="65" r="15" fill="#10b981" opacity="0.3"/>
+                            </g>
+                            
+                            <g id="R7-M4" onclick="showEquipmentDetails('R7-M4')" style="cursor: pointer;">
+                                <circle cx="70" cy="130" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="135" text-anchor="middle" font-size="14" font-weight="bold">M4</text>
+                            </g>
+                            <g id="R7-M3" onclick="showEquipmentDetails('R7-M3')" style="cursor: pointer;">
+                                <circle cx="70" cy="210" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="215" text-anchor="middle" font-size="14" font-weight="bold">M3</text>
+                            </g>
+                            <g id="R7-M2" onclick="showEquipmentDetails('R7-M2')" style="cursor: pointer;">
+                                <circle cx="70" cy="290" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="295" text-anchor="middle" font-size="14" font-weight="bold">M2</text>
+                            </g>
+                            <g id="R7-M1" onclick="showEquipmentDetails('R7-M1')" style="cursor: pointer;">
+                                <circle cx="70" cy="370" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="375" text-anchor="middle" font-size="14" font-weight="bold">M1</text>
+                            </g>
+                            
+                            <g id="R7-INF-FV" onclick="showEquipmentDetails('R7-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="428" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            <g id="R7-INF-FM" onclick="showEquipmentDetails('R7-INF-FM')" style="cursor: pointer;">
+                                <circle cx="35" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="468" text-anchor="middle" font-size="9" font-weight="bold">Inf FM</text>
+                            </g>
+                            <g id="R7-RAS-FV" onclick="showEquipmentDetails('R7-RAS-FV')" style="cursor: pointer;">
+                                <rect x="80" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="428" text-anchor="middle" font-size="10" font-weight="bold">RAS FV</text>
+                            </g>
+                            <g id="R7-RAS-FM" onclick="showEquipmentDetails('R7-RAS-FM')" style="cursor: pointer;">
+                                <circle cx="105" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="468" text-anchor="middle" font-size="9" font-weight="bold">RAS FM</text>
+                            </g>
+                            
+                            <line x1="35" y1="483" x2="35" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="105" y1="483" x2="105" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Reactor 8 -->
+                        <g transform="translate(1320, 500)">
+                            <rect x="0" y="0" width="140" height="450" rx="5" fill="#f8fafc" stroke="#334155" stroke-width="3"/>
+                            <text x="70" y="30" text-anchor="middle" font-size="32" font-weight="bold" fill="#0a4a6e">R8</text>
+                            
+                            <rect x="10" y="50" width="120" height="30" rx="3" fill="#dbeafe" stroke="#334155" stroke-width="2"/>
+                            <text x="70" y="70" text-anchor="middle" font-size="12" font-weight="bold">Weir</text>
+                            <g id="R8-WEIR" onclick="showEquipmentDetails('R8-WEIR')" style="cursor: pointer;">
+                                <circle cx="70" cy="65" r="15" fill="#10b981" opacity="0.3"/>
+                            </g>
+                            
+                            <g id="R8-M4" onclick="showEquipmentDetails('R8-M4')" style="cursor: pointer;">
+                                <circle cx="70" cy="130" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="135" text-anchor="middle" font-size="14" font-weight="bold">M4</text>
+                            </g>
+                            <g id="R8-M3" onclick="showEquipmentDetails('R8-M3')" style="cursor: pointer;">
+                                <circle cx="70" cy="210" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="215" text-anchor="middle" font-size="14" font-weight="bold">M3</text>
+                            </g>
+                            <g id="R8-M2" onclick="showEquipmentDetails('R8-M2')" style="cursor: pointer;">
+                                <circle cx="70" cy="290" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="295" text-anchor="middle" font-size="14" font-weight="bold">M2</text>
+                            </g>
+                            <g id="R8-M1" onclick="showEquipmentDetails('R8-M1')" style="cursor: pointer;">
+                                <circle cx="70" cy="370" r="28" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="70" y="375" text-anchor="middle" font-size="14" font-weight="bold">M1</text>
+                            </g>
+                            
+                            <g id="R8-INF-FV" onclick="showEquipmentDetails('R8-INF-FV')" style="cursor: pointer;">
+                                <rect x="10" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="428" text-anchor="middle" font-size="10" font-weight="bold">Inf FV</text>
+                            </g>
+                            <g id="R8-INF-FM" onclick="showEquipmentDetails('R8-INF-FM')" style="cursor: pointer;">
+                                <circle cx="35" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="35" y="468" text-anchor="middle" font-size="9" font-weight="bold">Inf FM</text>
+                            </g>
+                            <g id="R8-RAS-FV" onclick="showEquipmentDetails('R8-RAS-FV')" style="cursor: pointer;">
+                                <rect x="80" y="410" width="50" height="30" rx="3" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="428" text-anchor="middle" font-size="10" font-weight="bold">RAS FV</text>
+                            </g>
+                            <g id="R8-RAS-FM" onclick="showEquipmentDetails('R8-RAS-FM')" style="cursor: pointer;">
+                                <circle cx="105" cy="465" r="18" fill="#10b981" stroke="#334155" stroke-width="2"/>
+                                <text x="105" y="468" text-anchor="middle" font-size="9" font-weight="bold">RAS FM</text>
+                            </g>
+                            
+                            <line x1="35" y1="483" x2="35" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                            <line x1="105" y1="483" x2="105" y2="440" stroke="#3b82f6" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Bottom labels -->
+                        <text x="800" y="1320" text-anchor="middle" font-size="18" font-weight="bold" fill="#0a4a6e">Complete Treatment System</text>
+                        <text x="800" y="1350" text-anchor="middle" font-size="14" fill="#64748b">Click any equipment to view/update status</text>
+                        
+                        <!-- Equipment count display -->
+                        <text x="50" y="1380" font-size="12" fill="#64748b">Total Equipment: 128 pieces (12 clarifiers × 4 pieces + 8 reactors × 10 pieces)</text>
+                    </svg>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <button class="btn btn-primary" onclick="navigate('dt-add-equipment')" style="width: 100%;">
+                        Report Equipment Issue
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DIGITAL TWIN ADD/UPDATE EQUIPMENT -->
+        <div id="dt-add-equipment" class="page">
+            <div class="checklist">
+                <div class="checklist-header">
+                    <div class="checklist-title">Update Equipment Status</div>
+                </div>
+
+                <form id="equipmentForm" onsubmit="saveEquipmentStatus(event)">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Equipment Tag ID: *</label>
+                        <input type="text" id="equipTag" placeholder="e.g., FV-101, P-401, DO-201" required
+                            style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; text-transform: uppercase;">
+                        <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.25rem;">Enter the equipment tag number</div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Equipment Description:</label>
+                        <input type="text" id="equipDescription" placeholder="e.g., Primary Flow Control Valve"
+                            style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">System/Area:</label>
+                        <select id="equipArea" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                            <option value="">Select area...</option>
+                            <option value="Primary Treatment">Primary Treatment</option>
+                            <option value="Secondary Treatment">Secondary Treatment</option>
+                            <option value="Solids Handling">Solids Handling</option>
+                            <option value="Disinfection">Disinfection</option>
+                            <option value="Air System">Air System</option>
+                            <option value="Pumping">Pumping</option>
+                            <option value="Chemical Feed">Chemical Feed</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Operating Mode: *</label>
+                        <select id="equipMode" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                            <option value="">Select mode...</option>
+                            <option value="Auto - Normal">Auto - Normal (🟢)</option>
+                            <option value="Auto - Degraded">Auto - Degraded (🟡)</option>
+                            <option value="Manual">Manual (🔴)</option>
+                            <option value="Local">Local Control</option>
+                            <option value="Out of Service">Out of Service</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Issue Active?</label>
+                        <select id="hasIssue" onchange="toggleIssueFields()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                            <option value="no">No - Operating Normally</option>
+                            <option value="yes">Yes - Has Issue/Anomaly</option>
+                        </select>
+                    </div>
+
+                    <div id="issueFields" style="display: none;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Issue Category:</label>
+                            <select id="issueCategory" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                                <option value="">Select category...</option>
+                                <option value="Instrument Failure">Instrument Failure</option>
+                                <option value="Mechanical Problem">Mechanical Problem</option>
+                                <option value="Control System Issue">Control System Issue</option>
+                                <option value="Temporary Operational Need">Temporary Operational Need</option>
+                                <option value="Maintenance Required">Maintenance Required</option>
+                                <option value="Known Quirk">Known Quirk/Workaround</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Issue Description:</label>
+                            <textarea id="issueDescription" rows="3" placeholder="Describe the issue..."
+                                style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; resize: vertical;"></textarea>
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Workaround / Action Taken:</label>
+                            <textarea id="workaround" rows="3" placeholder="How are you operating it? What should next shift know?"
+                                style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; resize: vertical;"></textarea>
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Current Setpoint/Ratio (if adjusted):</label>
+                            <input type="text" id="currentSetpoint" placeholder="e.g., 45% open, 2.5 MGD, Ratio -20%"
+                                style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Expected Duration:</label>
+                            <select id="expectedDuration" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                                <option value="Minutes">Minutes</option>
+                                <option value="Hours">Hours</option>
+                                <option value="Days">Days</option>
+                                <option value="Weeks">Weeks</option>
+                                <option value="Indefinite">Indefinite</option>
+                                <option value="Until Repaired">Until Repaired</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Work Order #:</label>
+                            <input type="text" id="workOrder" placeholder="Optional"
+                                style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Priority Level:</label>
+                            <select id="priorityLevel" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                                <option value="Normal">Normal - Monitor per usual</option>
+                                <option value="Monitor Closely">Monitor Closely</option>
+                                <option value="Critical">Critical - Immediate attention</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text);">Your Name: *</label>
+                        <input type="text" id="operatorName" required placeholder="Enter your name"
+                            style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                    </div>
+
+                    <div class="action-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="resetEquipmentForm()">Clear Form</button>
+                        <button type="submit" class="btn btn-primary">Save Status</button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -1209,6 +2267,10 @@
         let navigationStack = ['home'];
         const pageTitles = {
             'home': 'WWTP Operations',
+            'digital-twin': 'Digital Twin',
+            'dt-dashboard': 'Equipment Dashboard',
+            'dt-visual': 'Process Flow Map',
+            'dt-add-equipment': 'Update Equipment',
             'sops': 'SOPs',
             'sops-primary': 'Primary Treatment',
             'sops-secondary': 'Secondary Treatment',
@@ -1770,7 +2832,476 @@ OPERATIONS:
         window.addEventListener('load', () => {
             loadChecklistStatePretrip();
             loadSettingsDisplay();
+            loadEquipmentData();
         });
+
+        // ===== DIGITAL TWIN FUNCTIONS =====
+        
+        // Equipment data structure
+        let equipmentData = [];
+        let lastSyncTime = null;
+
+        // Load equipment data from localStorage AND Google Sheets
+        function loadEquipmentData() {
+            // Load from localStorage first (for offline support)
+            const saved = localStorage.getItem('digital-twin-equipment');
+            if (saved) {
+                equipmentData = JSON.parse(saved);
+            }
+            
+            // Then sync from Google Sheets if configured
+            syncFromGoogleSheets();
+            
+            updateDashboardCounts();
+        }
+
+        // Sync equipment data FROM Google Sheets
+        function syncFromGoogleSheets() {
+            const webhookUrl = localStorage.getItem('google-sheets-webhook-url');
+            
+            if (!webhookUrl || webhookUrl.trim() === '') {
+                console.log('No Google Sheets configured - using local data only');
+                return;
+            }
+
+            // Note: We'll fetch from a specific GET endpoint
+            // For now, we'll use a polling approach with the Apps Script
+            const syncUrl = webhookUrl.replace('/exec', '/dev') + '?action=getEquipment';
+            
+            fetch(syncUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.equipment && Array.isArray(data.equipment)) {
+                    equipmentData = data.equipment;
+                    localStorage.setItem('digital-twin-equipment', JSON.stringify(equipmentData));
+                    lastSyncTime = new Date();
+                    updateDashboardCounts();
+                    updateVisualMap();
+                    console.log('Synced equipment data from Google Sheets');
+                }
+            })
+            .catch(error => {
+                console.log('Could not sync from Google Sheets, using local data:', error);
+            });
+        }
+
+        // Auto-refresh from Google Sheets every 2 minutes
+        setInterval(() => {
+            if (document.getElementById('dt-dashboard')?.classList.contains('active') || 
+                document.getElementById('dt-visual')?.classList.contains('active')) {
+                syncFromGoogleSheets();
+            }
+        }, 120000); // 2 minutes
+
+        // Save equipment data
+        function saveEquipmentData() {
+            localStorage.setItem('digital-twin-equipment', JSON.stringify(equipmentData));
+            updateDashboardCounts();
+        }
+
+        // Toggle issue fields visibility
+        function toggleIssueFields() {
+            const hasIssue = document.getElementById('hasIssue').value;
+            const issueFields = document.getElementById('issueFields');
+            issueFields.style.display = hasIssue === 'yes' ? 'block' : 'none';
+        }
+
+        // Save equipment status
+        function saveEquipmentStatus(event) {
+            event.preventDefault();
+
+            const tag = document.getElementById('equipTag').value.toUpperCase().trim();
+            const description = document.getElementById('equipDescription').value.trim();
+            const area = document.getElementById('equipArea').value;
+            const mode = document.getElementById('equipMode').value;
+            const hasIssue = document.getElementById('hasIssue').value === 'yes';
+            const operator = document.getElementById('operatorName').value.trim();
+
+            // Create equipment record
+            const equipment = {
+                tag: tag,
+                description: description || tag,
+                area: area,
+                mode: mode,
+                hasIssue: hasIssue,
+                timestamp: new Date().toISOString(),
+                operator: operator
+            };
+
+            // Add issue details if applicable
+            if (hasIssue) {
+                equipment.issueCategory = document.getElementById('issueCategory').value;
+                equipment.issueDescription = document.getElementById('issueDescription').value.trim();
+                equipment.workaround = document.getElementById('workaround').value.trim();
+                equipment.currentSetpoint = document.getElementById('currentSetpoint').value.trim();
+                equipment.expectedDuration = document.getElementById('expectedDuration').value;
+                equipment.workOrder = document.getElementById('workOrder').value.trim();
+                equipment.priorityLevel = document.getElementById('priorityLevel').value;
+            }
+
+            // Check if equipment already exists
+            const existingIndex = equipmentData.findIndex(e => e.tag === tag);
+            if (existingIndex !== -1) {
+                // Update existing
+                equipmentData[existingIndex] = equipment;
+            } else {
+                // Add new
+                equipmentData.unshift(equipment);
+            }
+
+            saveEquipmentData();
+            sendEquipmentToGoogleSheets(equipment);
+
+            showNotification('✓ Equipment status saved successfully', 'success');
+            resetEquipmentForm();
+            
+            // Navigate to dashboard
+            setTimeout(() => {
+                navigate('dt-dashboard');
+            }, 1000);
+        }
+
+        // Send equipment data to Google Sheets
+        function sendEquipmentToGoogleSheets(equipment) {
+            const webhookUrl = localStorage.getItem('google-sheets-webhook-url');
+            
+            if (!webhookUrl || webhookUrl.trim() === '') {
+                return; // No webhook configured
+            }
+
+            const data = {
+                type: 'equipment_status',
+                timestamp: new Date(equipment.timestamp).toLocaleString(),
+                tag: equipment.tag,
+                description: equipment.description,
+                area: equipment.area,
+                mode: equipment.mode,
+                hasIssue: equipment.hasIssue ? 'Yes' : 'No',
+                issueCategory: equipment.issueCategory || '',
+                issueDescription: equipment.issueDescription || '',
+                workaround: equipment.workaround || '',
+                currentSetpoint: equipment.currentSetpoint || '',
+                expectedDuration: equipment.expectedDuration || '',
+                workOrder: equipment.workOrder || '',
+                priorityLevel: equipment.priorityLevel || '',
+                operator: equipment.operator
+            };
+
+            fetch(webhookUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(() => {
+                console.log('Equipment data sent to Google Sheets');
+            })
+            .catch((error) => {
+                console.error('Error sending to Google Sheets:', error);
+            });
+        }
+
+        // Reset equipment form
+        function resetEquipmentForm() {
+            document.getElementById('equipmentForm').reset();
+            document.getElementById('issueFields').style.display = 'none';
+        }
+
+        // Update dashboard counts
+        function updateDashboardCounts() {
+            const manualCount = equipmentData.filter(e => e.mode === 'Manual' && e.hasIssue).length;
+            const degradedCount = equipmentData.filter(e => e.mode === 'Auto - Degraded' && e.hasIssue).length;
+            const totalIssues = equipmentData.filter(e => e.hasIssue).length;
+
+            const manualEl = document.getElementById('manualCount');
+            const degradedEl = document.getElementById('degradedCount');
+            const totalEl = document.getElementById('totalIssues');
+
+            if (manualEl) manualEl.textContent = manualCount;
+            if (degradedEl) degradedEl.textContent = degradedCount;
+            if (totalEl) totalEl.textContent = totalIssues;
+
+            // Update last sync time display
+            const syncDisplay = document.getElementById('lastSyncDisplay');
+            if (syncDisplay) {
+                if (lastSyncTime) {
+                    const timeAgo = getTimeSince(lastSyncTime);
+                    syncDisplay.textContent = `Last synced: ${timeAgo}`;
+                } else {
+                    syncDisplay.textContent = 'Using local data only';
+                }
+            }
+
+            refreshDashboard();
+        }
+
+        // Refresh dashboard display
+        function refreshDashboard() {
+            // Sync from Google Sheets first if on dashboard page
+            if (document.getElementById('dt-dashboard')?.classList.contains('active')) {
+                syncFromGoogleSheets();
+            }
+            
+            const issuesList = document.getElementById('issuesList');
+            if (!issuesList) return;
+
+            // Group by mode
+            const manual = equipmentData.filter(e => e.mode === 'Manual' && e.hasIssue);
+            const degraded = equipmentData.filter(e => e.mode === 'Auto - Degraded' && e.hasIssue);
+            const other = equipmentData.filter(e => e.hasIssue && e.mode !== 'Manual' && e.mode !== 'Auto - Degraded');
+
+            let html = '';
+
+            // Manual Operation Section
+            if (manual.length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: #dc2626; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #dc2626;"></span>
+                            MANUAL OPERATION (${manual.length})
+                        </h3>
+                        ${manual.map(e => createEquipmentCard(e)).join('')}
+                    </div>
+                `;
+            }
+
+            // Degraded Operation Section
+            if (degraded.length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: #f59e0b; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #f59e0b;"></span>
+                            DEGRADED OPERATION (${degraded.length})
+                        </h3>
+                        ${degraded.map(e => createEquipmentCard(e)).join('')}
+                    </div>
+                `;
+            }
+
+            // Other Issues Section
+            if (other.length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: #6b7280; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #6b7280;"></span>
+                            OTHER ISSUES (${other.length})
+                        </h3>
+                        ${other.map(e => createEquipmentCard(e)).join('')}
+                    </div>
+                `;
+            }
+
+            if (manual.length === 0 && degraded.length === 0 && other.length === 0) {
+                html = `
+                    <div style="text-align: center; padding: 4rem 2rem; color: var(--text-light);">
+                        <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.5;">✓</div>
+                        <h3>All Systems Normal</h3>
+                        <p>No active equipment issues reported</p>
+                    </div>
+                `;
+            }
+
+            issuesList.innerHTML = html;
+        }
+
+        // Create equipment card HTML
+        function createEquipmentCard(equipment) {
+            const time = new Date(equipment.timestamp);
+            const timeSince = getTimeSince(time);
+            
+            const priorityColors = {
+                'Normal': '#6b7280',
+                'Monitor Closely': '#f59e0b',
+                'Critical': '#dc2626'
+            };
+            
+            const priorityColor = priorityColors[equipment.priorityLevel] || '#6b7280';
+
+            return `
+                <div style="background: var(--surface); border-left: 4px solid ${priorityColor}; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: var(--shadow);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">${equipment.tag}</div>
+                            <div style="color: var(--text-light); font-size: 0.9rem;">${equipment.description}</div>
+                            ${equipment.area ? `<div style="color: var(--text-light); font-size: 0.85rem; margin-top: 0.25rem;">📍 ${equipment.area}</div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="background: ${priorityColor}; color: white; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">
+                                ${equipment.priorityLevel || 'Normal'}
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem;">${timeSince}</div>
+                        </div>
+                    </div>
+                    
+                    ${equipment.issueCategory ? `
+                        <div style="background: #fef3c7; border-left: 3px solid #f59e0b; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
+                            <div style="font-weight: 600; color: #92400e; margin-bottom: 0.25rem;">⚠️ ${equipment.issueCategory}</div>
+                            <div style="color: #78350f; font-size: 0.9rem;">${equipment.issueDescription}</div>
+                        </div>
+                    ` : ''}
+                    
+                    ${equipment.workaround ? `
+                        <div style="background: #dbeafe; border-left: 3px solid #3b82f6; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
+                            <div style="font-weight: 600; color: #1e40af; margin-bottom: 0.25rem;">🔧 Workaround</div>
+                            <div style="color: #1e3a8a; font-size: 0.9rem;">${equipment.workaround}</div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; font-size: 0.9rem;">
+                        ${equipment.currentSetpoint ? `
+                            <div>
+                                <div style="color: var(--text-light); font-size: 0.85rem;">Current Setpoint</div>
+                                <div style="font-weight: 600;">${equipment.currentSetpoint}</div>
+                            </div>
+                        ` : ''}
+                        ${equipment.expectedDuration ? `
+                            <div>
+                                <div style="color: var(--text-light); font-size: 0.85rem;">Expected Duration</div>
+                                <div style="font-weight: 600;">${equipment.expectedDuration}</div>
+                            </div>
+                        ` : ''}
+                        ${equipment.workOrder ? `
+                            <div>
+                                <div style="color: var(--text-light); font-size: 0.85rem;">Work Order</div>
+                                <div style="font-weight: 600;">#${equipment.workOrder}</div>
+                            </div>
+                        ` : ''}
+                        <div>
+                            <div style="color: var(--text-light); font-size: 0.85rem;">Reported By</div>
+                            <div style="font-weight: 600;">${equipment.operator}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                        <button onclick="editEquipment('${equipment.tag}')" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                            Edit
+                        </button>
+                        <button onclick="resolveIssue('${equipment.tag}')" class="btn btn-primary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                            Resolve
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Get time since timestamp
+        function getTimeSince(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' min ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' hrs ago';
+            return Math.floor(seconds / 86400) + ' days ago';
+        }
+
+        // Edit equipment
+        function editEquipment(tag) {
+            const equipment = equipmentData.find(e => e.tag === tag);
+            if (!equipment) return;
+
+            // Navigate to update page
+            navigate('dt-add-equipment');
+
+            // Wait for page to load, then populate form
+            setTimeout(() => {
+                document.getElementById('equipTag').value = equipment.tag;
+                document.getElementById('equipDescription').value = equipment.description;
+                document.getElementById('equipArea').value = equipment.area;
+                document.getElementById('equipMode').value = equipment.mode;
+                document.getElementById('hasIssue').value = equipment.hasIssue ? 'yes' : 'no';
+                document.getElementById('operatorName').value = equipment.operator;
+
+                if (equipment.hasIssue) {
+                    toggleIssueFields();
+                    document.getElementById('issueCategory').value = equipment.issueCategory || '';
+                    document.getElementById('issueDescription').value = equipment.issueDescription || '';
+                    document.getElementById('workaround').value = equipment.workaround || '';
+                    document.getElementById('currentSetpoint').value = equipment.currentSetpoint || '';
+                    document.getElementById('expectedDuration').value = equipment.expectedDuration || '';
+                    document.getElementById('workOrder').value = equipment.workOrder || '';
+                    document.getElementById('priorityLevel').value = equipment.priorityLevel || 'Normal';
+                }
+            }, 100);
+        }
+
+        // Resolve issue
+        function resolveIssue(tag) {
+            const confirmed = confirm('Mark this equipment issue as resolved? This will remove it from active issues.');
+            
+            if (confirmed) {
+                equipmentData = equipmentData.filter(e => e.tag !== tag);
+                saveEquipmentData();
+                showNotification('✓ Issue resolved', 'success');
+                refreshDashboard();
+            }
+        }
+
+        // Show equipment details (for SVG click)
+        function showEquipmentDetails(tag) {
+            const equipment = equipmentData.find(e => e.tag === tag);
+            
+            if (equipment && equipment.hasIssue) {
+                // Show details alert
+                let details = `${tag}: ${equipment.description}\n\n`;
+                details += `Mode: ${equipment.mode}\n`;
+                if (equipment.issueCategory) details += `Issue: ${equipment.issueCategory}\n`;
+                if (equipment.issueDescription) details += `${equipment.issueDescription}\n`;
+                if (equipment.workaround) details += `\nWorkaround:\n${equipment.workaround}\n`;
+                if (equipment.currentSetpoint) details += `\nSetpoint: ${equipment.currentSetpoint}\n`;
+                if (equipment.workOrder) details += `Work Order: #${equipment.workOrder}\n`;
+                
+                alert(details);
+            } else {
+                // No issue - offer to update
+                const update = confirm(`${tag}\n\nNo active issues reported.\n\nWould you like to report an issue?`);
+                if (update) {
+                    navigate('dt-add-equipment');
+                    setTimeout(() => {
+                        document.getElementById('equipTag').value = tag;
+                    }, 100);
+                }
+            }
+        }
+
+        // Update visual map colors based on equipment status
+        function updateVisualMap() {
+            equipmentData.forEach(equipment => {
+                const element = document.getElementById(equipment.tag);
+                if (element) {
+                    const statusCircle = element.querySelector('circle, rect');
+                    if (statusCircle) {
+                        let color = '#10b981'; // Default green
+                        
+                        if (equipment.mode === 'Manual') {
+                            color = '#dc2626'; // Red
+                        } else if (equipment.mode === 'Auto - Degraded') {
+                            color = '#f59e0b'; // Yellow/Orange
+                        } else if (equipment.mode === 'Out of Service') {
+                            color = '#6b7280'; // Gray
+                        }
+                        
+                        statusCircle.setAttribute('fill', color);
+                    }
+                }
+            });
+        }
+
+        // Update visual map when navigating to it
+        const originalNavigate = navigate;
+        navigate = function(pageId) {
+            originalNavigate(pageId);
+            if (pageId === 'dt-visual') {
+                setTimeout(updateVisualMap, 100);
+            }
+        };
+
 
         // ===== SETTINGS FUNCTIONS =====
         function saveSettings() {
